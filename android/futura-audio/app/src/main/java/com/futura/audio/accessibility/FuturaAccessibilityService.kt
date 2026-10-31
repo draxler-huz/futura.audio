@@ -20,16 +20,23 @@ class FuturaAccessibilityService : AccessibilityService() {
 
     private val recentPresses = ArrayDeque<Long>()
 
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        accessibilityButtonController.registerAccessibilityButtonCallback(
+            object : AccessibilityButtonController.AccessibilityButtonCallback() {
+                override fun onClicked(controller: AccessibilityButtonController) {
+                    ringNow()
+                }
+            }
+        )
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         // Not used. Both triggers arrive as button callbacks or key events.
     }
 
     override fun onInterrupt() {
         recentPresses.clear()
-    }
-
-    override fun onAccessibilityButtonClicked(controller: AccessibilityButtonController) {
-         ringNow()
     }
 
     override fun onKeyEvent(event: KeyEvent): Boolean {
