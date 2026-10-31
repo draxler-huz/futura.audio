@@ -70,5 +70,24 @@
                 <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
             </intent-filter>
         </receiver>
+        <activity
+            android:name=".ui.alarm.AlarmRingingActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.FuturaAudio" />
+
+        <service
+            android:name=".service.FuturaQuickSettingsService"
+            android:exported="true"
+            android:icon="@drawable/ic_alarm"
+            android:label="Futura Deck"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
     </application>
 </manifest>
