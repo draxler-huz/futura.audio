@@ -28,9 +28,8 @@ class FuturaAccessibilityService : AccessibilityService() {
         recentPresses.clear()
     }
 
-    override fun onAccessibilityButtonCallback(controller: AccessibilityButtonController) {
-        super.onAccessibilityButtonCallback(controller)
-        ringNow()
+    override fun onAccessibilityButtonClicked(controller: AccessibilityButtonController) {
+         ringNow()
     }
 
     override fun onKeyEvent(event: KeyEvent): Boolean {
