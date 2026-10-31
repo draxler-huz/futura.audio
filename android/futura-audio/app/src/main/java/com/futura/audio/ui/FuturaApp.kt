@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.futura.audio.ui.music.MusicPlayerScreen
 
 private const val TRANSITION_MILLIS = 700
 
@@ -76,12 +77,7 @@ fun FuturaApp(viewModel: FuturaViewModel) {
                         onDismiss = viewModel::dismiss,
                     )
 
-                    FuturaScreen.DASHBOARD -> MusicDashboard(
-                        state = state,
-                        onTogglePlay = viewModel::togglePlay,
-                        onSkip = viewModel::skip,
-                        onWakeNow = viewModel::wakeNow,
-                    )
+                    FuturaScreen.DASHBOARD -> MusicPlayerScreen(viewModel = viewModel)
 
                     FuturaScreen.LOCKED -> DeckLockedScreen(
                         deviceSeconds = state.deviceSeconds,

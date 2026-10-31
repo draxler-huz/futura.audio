@@ -159,6 +159,16 @@ class FuturaViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun selectTrack(trackIndex: Int) {
+        require(trackIndex in ROULETTE_QUEUE.indices)
+        if (trackIndex == _uiState.value.trackIndex) return
+        oboePlayer?.stop()
+        loadedTrackIndex = null
+        _uiState.update {
+            it.copy(trackIndex = trackIndex, trackElapsedSeconds = 0, playing = false)
+        }
+    }
+
     /**
      * Feeds decoded, interleaved Float32 stereo PCM at 44.1 kHz into the Oboe engine.
      * No audio assets or decoder were present in the supplied project snapshot.

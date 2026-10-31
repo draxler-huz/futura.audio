@@ -1,31 +1,22 @@
 package com.futura.audio.ui
 
-import android.content.Context
-import android.os.VibrationEffect
-import android.os.Vibrator
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.tween
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardDoubleArrowRight
-import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.filled.DoubleArrow
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,204 +29,119 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.ProgressBarRangeInfo
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.progressBarRangeInfo
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalDensity
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 private const val COMMIT_THRESHOLD = 0.85f
-private const val KEY_STEP = 0.2f
-private val THUMB_SIZE = 64.dp
-private val TRACK_PADDING = 6.dp
 
+/**
+ * Slide-to-confirm control from the alarm prototype. Drag the thumb past 85% of the track to
+ * fire [onComplete]; release earlier and it springs back.
+ */
 @Composable
 fun SwipeToDismiss(label: String, onComplete: () -> Unit) {
-    val context = LocalContext.current
     val density = LocalDensity.current
-    val scope = rememberCoroutineScope()
-    var offsetPx by remember { mutableFloatStateOf(0f) }
-    var dragging by remember { mutableStateOf(false) }
+    val thumbSize = 64.dp
+    val trackPadding = 6.dp
+    val thumbPx = with(density) { thumbSize.toPx() }
+    val padPx = with(density) { trackPadding.toPx() }
 
-    BoxWithConstraints(
+    var trackWidthPx by remember { mutableFloatStateOf(0f) }
+    val maxOffset = (trackWidthPx - thumbPx - padPx * 2).coerceAtLeast(0f)
+
+    var dragX by remember { mutableFloatStateOf(0f) }
+    var dragging by remember { mutableStateOf(false) }
+    val animatedX = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+
+    val thumbX = if (dragging) dragX else animatedX.value
+    val progress = if (maxOffset == 0f) 0f else thumbX / maxOffset
+
+    fun settle(value: Float) {
+        if (maxOffset > 0f && value / maxOffset >= COMMIT_THRESHOLD) {
+            scope.launch {
+                animatedX.animateTo(maxOffset, tween(150))
+                onComplete()
+                delay(900)
+                dragX = 0f
+                animatedX.snapTo(0f)
+            }
+        } else {
+            scope.launch { animatedX.animateTo(0f, tween(300)) }
+        }
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(76.dp)
-            .clip(RoundedCornerShape(38.dp))
-            .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(38.dp))
+            .onSizeChanged { trackWidthPx = it.width.toFloat() }
+            .clip(RoundedCornerShape(50))
+            .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(50))
             .background(Color.White.copy(alpha = 0.03f)),
     ) {
-        val maxOffsetPx = with(density) {
-            (maxWidth - THUMB_SIZE - TRACK_PADDING * 2).coerceAtLeast(0.dp).toPx()
-        }
-        val visualOffsetPx by animateFloatAsState(
-            targetValue = offsetPx,
-            animationSpec = if (dragging) snap() else tween(durationMillis = 300),
-            label = "dismiss thumb",
-        )
-        val progress = if (maxOffsetPx == 0f) 0f else (visualOffsetPx / maxOffsetPx).coerceIn(0f, 1f)
-        val targetFillWidth = with(density) {
-            (visualOffsetPx + (THUMB_SIZE + TRACK_PADDING * 2).toPx()).toDp().coerceAtMost(maxWidth)
-        }
-        val fillWidth by animateDpAsState(
-            targetValue = targetFillWidth,
-            animationSpec = if (dragging) snap() else tween(durationMillis = 300),
-            label = "dismiss track fill",
-        )
-
         Box(
             modifier = Modifier
-                .fillMaxHeight()
-                .width(fillWidth)
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            FuturaColors.Cyan.copy(alpha = 0.05f),
-                            FuturaColors.Cyan.copy(alpha = 0.25f),
-                        ),
-                    ),
-                ),
+                .height(76.dp)
+                .width(with(density) { (thumbX + thumbPx + padPx * 2).toDp() })
+                .clip(RoundedCornerShape(50))
+                .background(FuturaColors.Cyan.copy(alpha = 0.12f)),
         )
+
         Text(
             text = label,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(start = 64.dp),
-            color = FuturaColors.Foreground.copy(alpha = (1f - progress * 1.4f).coerceAtLeast(0f)),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 11.sp,
+            color = FuturaColors.Foreground.copy(alpha = (1f - progress * 1.4f).coerceIn(0f, 1f) * 0.7f),
+            fontFamily = FontFamilyMono,
             fontWeight = FontWeight.Medium,
-            letterSpacing = 2.75.sp,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            softWrap = false,
+            fontSize = 11.sp,
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(start = 64.dp),
         )
 
         Box(
             modifier = Modifier
-                .align(Alignment.CenterStart)
-                .padding(start = TRACK_PADDING)
-                .offset { IntOffset(visualOffsetPx.roundToInt(), 0) }
-                .size(THUMB_SIZE)
+                .offset { IntOffset((padPx + thumbX).roundToInt(), padPx.roundToInt()) }
+                .size(thumbSize)
                 .clip(CircleShape)
-                .border(1.dp, FuturaColors.Cyan.copy(alpha = 0.65f), CircleShape)
-                .background(FuturaColors.OledBlack)
-                .pointerInput(maxOffsetPx) {
+                .background(Color.Black)
+                .border(1.dp, FuturaColors.Cyan.copy(alpha = 0.4f), CircleShape)
+                .pointerInput(maxOffset) {
                     detectHorizontalDragGestures(
-                        onDragStart = { dragging = true },
-                        onDragCancel = {
-                            dragging = false
-                            offsetPx = 0f
+                        onDragStart = {
+                            dragging = true
+                            dragX = animatedX.value
                         },
                         onDragEnd = {
                             dragging = false
-                            settleDismiss(
-                                context = context,
-                                scope = scope,
-                                value = offsetPx,
-                                maxValue = maxOffsetPx,
-                                onOffsetChange = { offsetPx = it },
-                                onComplete = onComplete,
-                            )
+                            settle(dragX)
                         },
-                    ) { change, dragAmount ->
-                        change.consume()
-                        offsetPx = (offsetPx + dragAmount).coerceIn(0f, maxOffsetPx)
-                    }
-                }
-                .semantics {
-                        role = Role.Switch
-                        progressBarRangeInfo = ProgressBarRangeInfo(progress, 0f..1f)
-                        stateDescription = "${(progress * 100).roundToInt()} percent"
-                    }
-                .onKeyEvent { event ->
-                    when (event.key) {
-                        Key.Enter, Key.NumPadEnter, Key.Spacebar -> {
-                            settleDismiss(
-                                context = context,
-                                scope = scope,
-                                value = maxOffsetPx,
-                                maxValue = maxOffsetPx,
-                                onOffsetChange = { offsetPx = it },
-                                onComplete = onComplete,
-                            )
-                            true
-                        }
-
-                        Key.DirectionRight -> {
-                            val next = (offsetPx + maxOffsetPx * KEY_STEP).coerceAtMost(maxOffsetPx)
-                            settleDismiss(
-                                context = context,
-                                scope = scope,
-                                value = next,
-                                maxValue = maxOffsetPx,
-                                onOffsetChange = { offsetPx = it },
-                                onComplete = onComplete,
-                            )
-                            true
-                        }
-
-                        Key.DirectionLeft, Key.Escape -> {
-                            offsetPx = 0f
-                            true
-                        }
-
-                        else -> false
-                    }
-                }
-                .focusable(),
+                        onDragCancel = {
+                            dragging = false
+                            settle(0f)
+                        },
+                        onHorizontalDrag = { change, amount ->
+                            change.consume()
+                            dragX = (dragX + amount).coerceIn(0f, maxOffset)
+                        },
+                    )
+                },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = if (progress >= COMMIT_THRESHOLD) {
-                    Icons.Outlined.Lock
-                } else {
-                    Icons.Filled.KeyboardDoubleArrowRight
-                },
-                contentDescription = label,
-                tint = FuturaColors.Cyan,
-                modifier = Modifier.size(if (progress >= COMMIT_THRESHOLD) 24.dp else 28.dp),
-            )
+            if (progress >= COMMIT_THRESHOLD) {
+                Icon(Icons.Filled.Lock, contentDescription = "Dismiss", tint = FuturaColors.Cyan, modifier = Modifier.size(24.dp))
+            } else {
+                Icon(Icons.Filled.DoubleArrow, contentDescription = "Swipe to dismiss", tint = FuturaColors.Cyan, modifier = Modifier.size(28.dp))
+            }
         }
-    }
-}
-
-private fun settleDismiss(
-    context: Context,
-    scope: kotlinx.coroutines.CoroutineScope,
-    value: Float,
-    maxValue: Float,
-    onOffsetChange: (Float) -> Unit,
-    onComplete: () -> Unit,
-) {
-    if (maxValue > 0f && value / maxValue >= COMMIT_THRESHOLD) {
-        onOffsetChange(maxValue)
-        val vibrator = context.getSystemService(Vibrator::class.java)
-        vibrator?.vibrate(VibrationEffect.createOneShot(30L, VibrationEffect.DEFAULT_AMPLITUDE))
-        onComplete()
-        scope.launch {
-            delay(900L)
-            onOffsetChange(0f)
-        }
-    } else {
-        onOffsetChange(0f)
     }
 }

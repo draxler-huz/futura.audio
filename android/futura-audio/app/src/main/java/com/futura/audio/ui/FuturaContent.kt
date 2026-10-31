@@ -1,10 +1,17 @@
 package com.futura.audio.ui
 
+import com.futura.audio.ui.library.LibraryCatalog
+
 const val DEVICE_START_SECONDS = 6 * 60 * 60 + 30 * 60
 const val SNOOZE_DURATION_SECONDS = 9 * 60
 const val NEXT_ALARM_LABEL = "07:00 AM"
 const val AUDIO_OUTPUT_DEVICE = "CyberBuds Pro"
 const val AUDIO_OUTPUT_MODE = "Lossless Active"
+
+/** Playback order for the view model. The index is the track index used by selectTrack and loadTrackPcm. */
+val ROULETTE_QUEUE: List<FuturaTrack> = LibraryCatalog.tracks.map {
+    FuturaTrack(it.id, it.title, it.artist, it.durationSeconds, "FLAC 16/44.1")
+}
 
 data class FuturaTrack(
     val id: String,
@@ -14,13 +21,6 @@ data class FuturaTrack(
     val format: String,
 )
 
-val ROULETTE_QUEUE = listOf(
-    FuturaTrack("t1", "Neon Sunrise Protocol", "Halcyon Drift", 248, "FLAC 24/96"),
-    FuturaTrack("t2", "Low Orbit Lullaby", "Kessler Field", 212, "FLAC 24/48"),
-    FuturaTrack("t3", "Chrome Meridian", "Vanta Circuit", 301, "ALAC 24/96"),
-    FuturaTrack("t4", "Quiet Signal", "Mira Okafor", 187, "FLAC 16/44"),
-    FuturaTrack("t5", "Daybreak Handshake", "Sublevel 9", 264, "FLAC 24/192"),
-)
 
 data class SplitClock(
     val hhmm: String,
