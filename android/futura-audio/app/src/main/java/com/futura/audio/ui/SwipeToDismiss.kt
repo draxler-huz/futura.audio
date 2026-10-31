@@ -162,10 +162,10 @@ fun SwipeToDismiss(label: String, onComplete: () -> Unit) {
                     }
                 }
                 .semantics {
-                    role = Role.Slider
-                    progressBarRangeInfo = ProgressBarRangeInfo(progress, 0f..1f)
-                    stateDescription = "${(progress * 100).roundToInt()} percent"
-                }
+                        role = Role.Switch
+                        progressBarRangeInfo = ProgressBarRangeInfo(progress, 0f..1f)
+                        stateDescription = "${(progress * 100).roundToInt()} percent"
+                    }
                 .onKeyEvent { event ->
                     when (event.key) {
                         Key.Enter, Key.NumPadEnter, Key.Spacebar -> {

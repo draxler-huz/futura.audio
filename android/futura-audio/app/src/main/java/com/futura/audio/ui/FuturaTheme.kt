@@ -4,7 +4,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.material3.Typography
 
 object FuturaColors {
@@ -30,7 +29,7 @@ fun FuturaTheme(content: @Composable () -> Unit) {
 
     MaterialTheme(
         colorScheme = colors,
-        typography = Typography(defaultFontFamily = FontFamily.Monospace),
+        typography = Typography(),
         content = content,
     )
 }
