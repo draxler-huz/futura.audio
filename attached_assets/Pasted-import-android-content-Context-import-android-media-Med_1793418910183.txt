@@ -1,0 +1,102 @@
+import android.content.Context
+import android.media.MediaCodec
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+
+class TrackDecoder(private val context: Context) {
+
+    fun decodeUriToFloatArray(uriString: String): FloatArray? {
+        val extractor = MediaExtractor()
+        try {
+            // Support assets, file paths, or content URIs
+            if (uriString.startsWith("content://") || uriString.startsWith("file://")) {
+                extractor.setDataSource(context, android.net.Uri.parse(uriString), null)
+            } else {
+                extractor.setDataSource(uriString)
+            }
+
+            var audioTrackIndex = -1
+            var format: MediaFormat? = null
+
+            for (i in 0 until extractor.trackCount) {
+                val f = extractor.getTrackFormat(i)
+                val mime = f.getString(MediaFormat.KEY_MIME) ?: continue
+                if (mime.startsWith("audio/")) {
+                    audioTrackIndex = i
+                    format = f
+                    break
+                }
+            }
+
+            if (audioTrackIndex == -1 || format == null) return null
+
+            extractor.selectTrack(audioTrackIndex)
+            val mime = format.getString(MediaFormat.KEY_MIME) ?: return null
+            val codec = MediaCodec.createDecoderByType(mime)
+            codec.configure(format, null, null, 0)
+            codec.start()
+
+            val pcmBuffer = mutableListOf<Float>()
+            val inputBuffers = codec.inputBuffers
+            var outputBuffers = codec.outputBuffers
+            var info = MediaCodec.BufferInfo()
+            var isEOS = false
+
+            while (!isEOS) {
+                val inputBufferIndex = codec.dequeueInputBuffer(10000)
+                if (inputBufferIndex >= 0) {
+                    val inputBuffer = inputBuffers[inputBufferIndex]
+                    val sampleSize = extractor.readSampleData(inputBuffer, 0)
+                    if (sampleSize < 0) {
+                        codec.queueInputBuffer(inputBufferIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                        isEOS = true
+                    } else {
+                        val presentationTimeUs = extractor.sampleTime
+                        codec.queueInputBuffer(inputBufferIndex, 0, sampleSize, presentationTimeUs, 0)
+                        extractor.advance()
+                    }
+                }
+
+                var outputBufferIndex = codec.dequeueOutputBuffer(info, 10000)
+                while (outputBufferIndex >= 0) {
+                    val outputBuffer = outputBuffers[outputBufferIndex]
+                    outputBuffer.position(info.offset)
+                    outputBuffer.limit(info.offset + info.size)
+
+                    // Convert PCM bytes to floats (-1.0f to 1.0f)
+                    val chunk = convertByteBufferToFloatArray(outputBuffer)
+                    pcmBuffer.addAll(chunk.toList())
+
+                    codec.releaseOutputBuffer(outputBufferIndex, false)
+                    if ((info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                        isEOS = true
+                        break
+                    }
+                    outputBufferIndex = codec.dequeueOutputBuffer(info, 0)
+                }
+            }
+
+            codec.stop()
+            codec.release()
+            extractor.release()
+
+            return pcmBuffer.toFloatArray()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            extractor.release()
+            return null
+        }
+    }
+
+    private fun convertByteBufferToFloatArray(buffer: ByteBuffer): FloatArray {
+        // Assuming 16-bit PCM encoding from standard decoders
+        val shortBuffer = buffer.order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+        val floatArray = FloatArray(shortBuffer.remaining())
+        for (i in floatArray.indices) {
+            floatArray[i] = shortBuffer.get(i) / 32768.0f // Normalize to [-1.0, 1.0]
+        }
+        return floatArray
+    }
+}

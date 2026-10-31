@@ -1,0 +1,61 @@
+name: Build Futura Audio Native APK
+
+on:
+  push:
+    branches: ["main", "dev"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      NDK_VERSION: "27.2.12479018"
+      CMAKE_VERSION: "3.22.1"
+      PLATFORM_VERSION: "android-36"
+      BUILD_TOOLS_VERSION: "36.0.0"
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK platform, NDK, and CMake
+        run: |
+          sdkmanager \
+            "platforms;${{ env.PLATFORM_VERSION }}" \
+            "build-tools;${{ env.BUILD_TOOLS_VERSION }}" \
+            "ndk;${{ env.NDK_VERSION }}" \
+            "cmake;${{ env.CMAKE_VERSION }}"
+
+      - name: Accept SDK licences
+        run: yes | sdkmanager --licenses || true
+
+      - name: Grant Gradle execute permission
+        working-directory: android/futura-audio
+        run: chmod +x gradlew
+
+      - name: Build debug APK (NDK + Oboe C++17)
+        working-directory: android/futura-audio
+        run: ./gradlew :app:assembleDebug --stacktrace --no-daemon
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/${{ env.NDK_VERSION }}
+
+      - name: Upload debug APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: futura-audio-native-debug
+          path: android/futura-audio/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

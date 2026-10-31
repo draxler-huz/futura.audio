@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">FUTURA AUDIO</string>
+    <string name="alarm_channel_name">Futura Alarm</string>
+    <string name="alarm_channel_description">Notifications for alarms scheduled by FUTURA AUDIO.</string>
+</resources>

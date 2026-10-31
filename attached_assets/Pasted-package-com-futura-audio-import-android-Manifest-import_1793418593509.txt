@@ -1,0 +1,92 @@
+package com.futura.audio
+
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            FuturaTheme {
+                Surface(color = MaterialTheme.colorScheme.background) {
+                    MainScreenSetup()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MainScreenSetup() {
+    val context = LocalContext.current
+    var showRationaleDialog by remember { mutableStateOf(false) }
+
+    // 1. Define the permission launcher
+    const val notificationPermission = Manifest.permission.POST_NOTIFICATIONS
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Permission granted: Alarms and foreground services can post visible alerts
+        } else {
+            // Permission denied: Handle gracefully (e.g., show a persistent banner or settings nudge)
+        }
+    }
+
+    // 2. Check permission status on initial composition (Android 13+)
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val hasPermission = ContextCompat.checkSelfPermission(
+                context,
+                notificationPermission
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!hasPermission) {
+                // Show our custom explanatory prompt first
+                showRationaleDialog = true
+            }
+        }
+    }
+
+    // 3. Custom Explanatory Prompt / Rationale Dialog
+    if (showRationaleDialog) {
+        AlertDialog(
+            onDismissRequest = { showRationaleDialog = false },
+            title = { Text("Enable Alarm Notifications") },
+            text = { 
+                Text("Futura needs notification access to ensure your scheduled alarms, wake-up routines, and player alerts appear properly on your screen.") 
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showRationaleDialog = false
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            permissionLauncher.launch(notificationPermission)
+                        }
+                    }
+                ) {
+                    Text("Continue")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showRationaleDialog = false }
+                ) {
+                    Text("Not Now")
+                }
+            }
+        )
+    }
+
+    // Your main app UI content goes here
+}
