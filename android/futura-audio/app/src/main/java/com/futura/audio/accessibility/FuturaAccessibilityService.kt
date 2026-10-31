@@ -2,8 +2,10 @@ package com.futura.audio.accessibility
 
 import android.accessibilityservice.AccessibilityButtonController
 import android.accessibilityservice.AccessibilityService
+import android.content.Intent
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
+import com.futura.audio.MainActivity
 import com.futura.audio.alarm.AlarmCoordinator
 import com.futura.audio.alarm.DiscreteAlarmState
 import com.futura.audio.service.FuturaAlarmService
@@ -59,6 +61,11 @@ class FuturaAccessibilityService : AccessibilityService() {
         if (AlarmCoordinator.getInstance().alarmState.value is DiscreteAlarmState.Firing) return
         AlarmCoordinator.getInstance().onAlarmTriggered(System.currentTimeMillis())
         FuturaAlarmService.start(this)
+        startActivity(
+            Intent(this, MainActivity::class.java).addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            )
+        )
     }
 
     companion object {
