@@ -1,4 +1,4 @@
-name: Build Futura Audio Native APK
+name: Build Futura Audio Native and  APK
 
 on:
   push:
