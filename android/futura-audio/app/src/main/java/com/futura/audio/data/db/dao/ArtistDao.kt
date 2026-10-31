@@ -18,6 +18,22 @@ interface ArtistDao {
     @Query("SELECT * FROM artists WHERE id = :id")
     suspend fun getById(id: String): ArtistEntity?
 
+    suspend fun getByIdOrCreate(name: String): ArtistEntity {
+        return getById(name) ?: ArtistEntity(
+            id = name,
+            name = name,
+            genre = "Unknown",
+            family = "Unknown",
+            popularity = 0,
+        ).also { upsert(it) }
+    }
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(artists: List<ArtistEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(artist: ArtistEntity)
+
+    @Query("DELETE FROM artists WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>)
 }

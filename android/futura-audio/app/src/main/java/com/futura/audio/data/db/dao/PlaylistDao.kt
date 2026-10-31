@@ -29,6 +29,31 @@ interface PlaylistDao {
 
     @Query(
         """
+        DELETE FROM playlist_tracks
+        WHERE playlistId = :playlistId AND trackId = :trackId
+        """,
+    )
+    suspend fun deleteTrackRow(playlistId: String, trackId: String)
+
+    @Query(
+        """
+        SELECT COALESCE(MAX(position), -1) FROM playlist_tracks
+        WHERE playlistId = :playlistId
+        """,
+    )
+    suspend fun maxPosition(playlistId: String): Int
+
+    @Query(
+        """
+        SELECT trackId FROM playlist_tracks
+        WHERE playlistId = :playlistId
+        ORDER BY position ASC
+        """,
+    )
+    suspend fun getTrackIdsOrdered(playlistId: String): List<String>
+
+    @Query(
+        """
         SELECT t.* FROM tracks AS t
         INNER JOIN playlist_tracks AS pt ON pt.trackId = t.id
         WHERE pt.playlistId = :playlistId
@@ -36,6 +61,16 @@ interface PlaylistDao {
         """,
     )
     fun observeTracks(playlistId: String): Flow<List<TrackEntity>>
+
+    @Query(
+        """
+        SELECT t.* FROM tracks AS t
+        INNER JOIN playlist_tracks AS pt ON pt.trackId = t.id
+        WHERE pt.playlistId = :playlistId
+        ORDER BY pt.position ASC
+        """,
+    )
+    suspend fun getTracks(playlistId: String): List<TrackEntity>
 
     @Transaction
     suspend fun replaceTracks(playlistId: String, trackIds: List<String>) {
@@ -49,5 +84,43 @@ interface PlaylistDao {
                 )
             },
         )
+    }
+
+    /** Appends [trackId] at the end of the playlist (item 33). */
+    @Transaction
+    suspend fun addTrack(playlistId: String, trackId: String) {
+        val next = maxPosition(playlistId) + 1
+        upsertTracks(
+            listOf(
+                PlaylistTrackEntity(
+                    playlistId = playlistId,
+                    trackId = trackId,
+                    position = next,
+                ),
+            ),
+        )
+    }
+
+    /** Removes [trackId] and compact-renumbers remaining positions (item 33). */
+    @Transaction
+    suspend fun removeTrack(playlistId: String, trackId: String) {
+        deleteTrackRow(playlistId, trackId)
+        val remaining = getTrackIdsOrdered(playlistId)
+        clearTracks(playlistId)
+        upsertTracks(
+            remaining.mapIndexed { index, id ->
+                PlaylistTrackEntity(
+                    playlistId = playlistId,
+                    trackId = id,
+                    position = index,
+                )
+            },
+        )
+    }
+
+    /** Replaces membership order with [orderedTrackIds] (item 33). */
+    @Transaction
+    suspend fun reorderTracks(playlistId: String, orderedTrackIds: List<String>) {
+        replaceTracks(playlistId, orderedTrackIds)
     }
 }

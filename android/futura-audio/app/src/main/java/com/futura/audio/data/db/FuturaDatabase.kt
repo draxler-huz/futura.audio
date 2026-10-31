@@ -6,13 +6,17 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.futura.audio.data.db.dao.AlbumDao
 import com.futura.audio.data.db.dao.ArtistDao
+import com.futura.audio.data.db.dao.PlayJournalDao
 import com.futura.audio.data.db.dao.PlaylistDao
 import com.futura.audio.data.db.dao.TrackDao
+import com.futura.audio.data.db.dao.TrackFtsDao
 import com.futura.audio.data.db.entity.AlbumEntity
 import com.futura.audio.data.db.entity.ArtistEntity
+import com.futura.audio.data.db.entity.PlayJournalEntryEntity
 import com.futura.audio.data.db.entity.PlaylistEntity
 import com.futura.audio.data.db.entity.PlaylistTrackEntity
 import com.futura.audio.data.db.entity.TrackEntity
+import com.futura.audio.data.db.entity.TrackFtsEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,8 +28,10 @@ import kotlinx.coroutines.launch
         TrackEntity::class,
         PlaylistEntity::class,
         PlaylistTrackEntity::class,
+        TrackFtsEntity::class,
+        PlayJournalEntryEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class FuturaDatabase : RoomDatabase() {
@@ -33,6 +39,8 @@ abstract class FuturaDatabase : RoomDatabase() {
     abstract fun albumDao(): AlbumDao
     abstract fun trackDao(): TrackDao
     abstract fun playlistDao(): PlaylistDao
+    abstract fun trackFtsDao(): TrackFtsDao
+    abstract fun playJournalDao(): PlayJournalDao
 
     companion object {
         const val NAME = "futura_library.db"

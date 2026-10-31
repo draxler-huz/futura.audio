@@ -11,6 +11,9 @@ import androidx.room.PrimaryKey
  * [valence] / [energy] are indexer or seed values (0f..1f).
  * [valenceOverride] / [energyOverride] are user edits; re-indexing must never overwrite them.
  * Effective mood values: override ?: base.
+ *
+ * Scan/index columns (Phase 2) are nullable for seed rows; [completionRatioSum] /
+ * [playEventCount] default to 0 and accumulate play-completion stats.
  */
 @Entity(
     tableName = "tracks",
@@ -31,6 +34,9 @@ import androidx.room.PrimaryKey
     indices = [
         Index("artistId"),
         Index("albumId"),
+        Index(value = ["absolutePath"], unique = false),
+        Index(value = ["mediaStoreId"], unique = false),
+        Index("favorite"),
     ],
 )
 data class TrackEntity(
@@ -52,6 +58,23 @@ data class TrackEntity(
     val favorite: Boolean,
     val folder: String,
     val fileName: String,
+    // --- Phase 2 scan / index fields ---
+    val absolutePath: String? = null,
+    val contentUri: String? = null,
+    val mediaStoreId: Long? = null,
+    val format: String? = null,
+    val md5: String? = null,
+    val sha1: String? = null,
+    val volumeUuid: String? = null,
+    val durationMs: Long? = null,
+    val genre: String? = null,
+    val normalizedGenre: String? = null,
+    val lyrics: String? = null,
+    val coverCacheKey: String? = null,
+    val fileSizeBytes: Long? = null,
+    val lastModifiedEpochMs: Long? = null,
+    val completionRatioSum: Float = 0f,
+    val playEventCount: Int = 0,
 ) {
     fun effectiveValence(): Float = valenceOverride ?: valence
     fun effectiveEnergy(): Float = energyOverride ?: energy
