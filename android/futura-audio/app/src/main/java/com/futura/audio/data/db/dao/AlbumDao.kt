@@ -24,7 +24,7 @@ interface AlbumDao {
             title = title,
             artistId = artistId,
             year = 2024,
-            trackCount = 0,
+            hue = Math.floorMod(title.hashCode(), 360),
         ).also { upsert(it) }
     }
 

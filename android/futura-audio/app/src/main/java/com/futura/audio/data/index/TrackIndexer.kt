@@ -265,14 +265,14 @@ class TrackIndexer(
         return result
     }
 
-    private fun indexArtistAlbum(artistId: String, albumGroup: Map<String, List<RecursiveFileScanner.ScannedFile>>) {
+    private suspend fun indexArtistAlbum(artistId: String, albumGroup: Map<String, List<RecursiveFileScanner.ScannedFile>>) {
         // Simple artist and album insertion
         val artistEntity = ArtistEntity(
             id = artistId,
             name = "Artist $artistId",
             genre = "Unknown",
             family = "Unknown",
-            popularity = 0,
+            hue = Math.floorMod(artistId.hashCode(), 360),
         )
         database.artistDao().upsert(artistEntity)
 
@@ -282,7 +282,7 @@ class TrackIndexer(
                 title = "Album $albumId",
                 artistId = artistId,
                 year = 2024,
-                trackCount = files.size,
+                hue = Math.floorMod(albumId.hashCode(), 360),
             )
             database.albumDao().upsert(albumEntity)
         }

@@ -24,7 +24,7 @@ interface ArtistDao {
             name = name,
             genre = "Unknown",
             family = "Unknown",
-            popularity = 0,
+            hue = Math.floorMod(name.hashCode(), 360),
         ).also { upsert(it) }
     }
 

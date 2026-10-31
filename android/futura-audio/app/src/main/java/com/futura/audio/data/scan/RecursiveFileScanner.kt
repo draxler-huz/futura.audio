@@ -19,7 +19,7 @@ class RecursiveFileScanner(
 
     /**
      * @param extraRoots additional directories to include (e.g. app-specific folders).
-     * @param musicOnly when true, only walks `*/Music` trees under each volume; otherwise
+     * @param musicOnly when true, only walks each `Music` folder under each volume; otherwise
      *   walks volume roots but still filters to audio extensions.
      */
     suspend fun scan(
