@@ -199,4 +199,3 @@ Not verified by a local APK build.
 ### Outside test
 - Boot receiver runs before unlock and records: time, unlocked state, network state, and one HEAD request to youtube.com.
 - The test plays nothing automatically. Playback happens only on a tap, through YouTube's own player, with autoplay blocked.
-- No ad blocking, no stream extraction, no downloads, no relaying.
