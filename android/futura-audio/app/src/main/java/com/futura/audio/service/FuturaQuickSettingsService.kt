@@ -23,6 +23,9 @@ class FuturaQuickSettingsService : TileService() {
             FuturaAlarmService.start(this)
         }
 
+        com.futura.audio.data.device.DeviceStateStore(applicationContext)
+            .putString("tile_last_source", "QS_TILE")
+
         val intent = Intent(this, AlarmRingingActivity::class.java).apply {
             putExtra(AlarmRingingActivity.EXTRA_ALARM_TIME, "QS PANEL // ON-DEMAND")
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)

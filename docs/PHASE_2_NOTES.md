@@ -182,3 +182,21 @@ Not verified by a local APK build.
 - Simplifies entity creation and retrieval in indexer services
 - Ensures consistent artist/album management across the system
 
+
+## Futura Deck tile state and floating button
+
+### What is stored
+- `futura_device_state` (device-protected storage, via `DeviceStateStore`): `tile_last_source` = `"QS_TILE"`, written when the tile is tapped after the alarm starts.
+- `futura_outside_test` (device-protected storage): the boot-test log and the one saved link. Diagnostic only.
+- The alarm schedule stays in `futura_alarm_schedule` / `next_trigger_at`. Nothing is written to the PIN DataStore or the library database.
+
+### Floating button
+- Needs `SYSTEM_ALERT_WINDOW` ("Display over other apps"), granted by the user in Settings. It is never requested on launch.
+- The button is a foreground service with a Stop action. Stopping it removes the view.
+- Controls are on the Outside test screen, not the main screen.
+- A tap opens the main app. A tap is a user action, and the app holds the overlay permission, which is what allows Android to start the activity from the background. Drag does not count as a tap.
+
+### Outside test
+- Boot receiver runs before unlock and records: time, unlocked state, network state, and one HEAD request to youtube.com.
+- The test plays nothing automatically. Playback happens only on a tap, through YouTube's own player, with autoplay blocked.
+- No ad blocking, no stream extraction, no downloads, no relaying.
