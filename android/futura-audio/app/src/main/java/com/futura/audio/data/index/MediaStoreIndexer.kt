@@ -150,7 +150,7 @@ class MediaStoreIndexer(
             absolutePath = absolutePath,
             contentUri = contentUri.toString(),
             mediaStoreId = mediaStoreId,
-            format = mimeType?.substringAfterLast('/', "").lowercase(),
+            format = mimeType?.substringAfterLast('/', "")?.lowercase(),
             md5 = null, // jaudiotagger could read this but skipping for efficiency
             sha1 = null,
             volumeUuid = absolutePath?.let { storageMapper.volumeUuidForBlocking(java.io.File(it)) },
@@ -181,7 +181,7 @@ class MediaStoreIndexer(
             absolutePath = absolutePath,
             contentUri = contentUri.toString(),
             mediaStoreId = mediaStoreId,
-            format = mimeType?.substringAfterLast('/', "").lowercase(),
+            format = mimeType?.substringAfterLast('/', "")?.lowercase(),
             md5 = null,
             sha1 = null,
             volumeUuid = absolutePath?.let { storageMapper.volumeUuidForBlocking(java.io.File(it)) },
@@ -211,13 +211,13 @@ class MediaStoreIndexer(
         return result
     }
 
-    private fun indexArtistAlbum(artistName: String, albumGroup: Map<String, List<MediaStoreAudioQuery.AudioItem>>) {
+    private suspend fun indexArtistAlbum(artistName: String, albumGroup: Map<String, List<MediaStoreAudioQuery.AudioItem>>) {
         val artistEntity = ArtistEntity(
             id = artistName,
             name = artistName,
             genre = "Unknown",
             family = "Unknown",
-            popularity = 0,
+            hue = Math.floorMod(artistName.hashCode(), 360),
         )
         database.artistDao().upsert(artistEntity)
 
@@ -227,7 +227,7 @@ class MediaStoreIndexer(
                 title = albumTitle,
                 artistId = artistName,
                 year = 2024,
-                trackCount = items.size,
+                hue = Math.floorMod(albumTitle.hashCode(), 360),
             )
             database.albumDao().upsert(albumEntity)
         }
